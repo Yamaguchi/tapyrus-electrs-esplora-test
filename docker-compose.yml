@@ -1,0 +1,103 @@
+version: "3.2"
+services:
+  tapyrus:
+    image: tapyrus/tapyrusd
+    networks:
+      net:
+        ipv4_address: 172.18.2.1
+    tty: true
+    ports:
+      - 12381:12381
+    volumes:
+      - ./tmp/tapyrus:/var/lib/tapyrus/prod-1905960821
+      - type: bind
+        source: ./core/genesis.1905960821
+        target: /var/lib/tapyrus/genesis.1905960821
+      - type: bind
+        source: ./core/tapyrus.conf
+        target: /etc/tapyrus/tapyrus.conf
+  electrs:
+    build: ./electrs
+    command:
+      [
+        "electrs",
+        "-vvvv",
+        "--timestamp",
+        "--daemon-dir",
+        "/root/.tapyrus/prod-1905960821",
+        "--db-dir",
+        "/root/db",
+        "--network",
+        "prod",
+        "--network-id",
+        "1905960821",
+        "--electrum-rpc-addr",
+        "0.0.0.0:50001",
+        "--daemon-rpc-addr",
+        "tapyrus:12381",
+        "--txid-limit",
+        "0",
+      ]
+    networks:
+      net:
+        ipv4_address: 172.18.4.1
+    tty: true
+    ports:
+      - 50002:50001
+    volumes:
+      - ./tmp/electrs/db:/tmp/db
+      - ./tmp/tapyrus:/root/.tapyrus/prod-1905960821
+      - ./electrs/.cookie:/root/.tapyrus/prod-1905960821/.cookie
+  esplora:
+    build: ./esplora
+    command: ["bash"]
+    # command:
+    #   [
+    #     "electrs",
+    #     "-vvvv",
+    #     "--timestamp",
+    #     "--daemon-dir",
+    #     "/tmp/.tapyrus/prod-1905960821",
+    #     "--db-dir",
+    #     "/root/db",
+    #     "--network",
+    #     "prod",
+    #     "--network-id",
+    #     "1905960821",
+    #     "--electrum-rpc-addr",
+    #     "0.0.0.0:50001",
+    #     "--daemon-rpc-addr",
+    #     "tapyrus:12381",
+    #     "--http-addr",
+    #     "0.0.0.0:3000",
+    #     "--cookie",
+    #     "user:pass",
+    #     "--electrum-txs-limit",
+    #     "1000000",
+    #     "--utxos-limit",
+    #     "1000000",
+    #     "--jsonrpc-import"
+    #   ]
+    networks:
+      net:
+        ipv4_address: 172.18.5.1
+    tty: true
+    ports:
+      - 50003:50001
+      - 3001:3000
+    volumes:
+      - ./tmp/esplora/db:/root/db
+      - ./tmp/tapyrus:/root/.tapyrus/prod-1905960821
+networks:
+  net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
+volumes:
+  bitcoin:
+    driver: local
+  electrs:
+    driver: local
+  esplora:
+    driver: local
